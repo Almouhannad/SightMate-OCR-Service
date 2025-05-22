@@ -1,10 +1,11 @@
 import onnxruntime as ort
 from src.domain.ports import OCRPort
 from src.domain.models import OCRInput, OCROutput, TextBlock
+from src.infrastructure.models.paddleocr.postprocessing import post_process
 from src.infrastructure.models.registry import register_adapter
 from src.infrastructure.models.paddleocr.config import paddle_ocr_settings
 from src.infrastructure.models.paddleocr.preprocessing import (
-    preprocess_for_det, preprocess_recognize, post_process
+    preprocess_for_det, preprocess_recognize
 )
 import numpy as np
 
