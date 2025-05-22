@@ -14,4 +14,5 @@ class ProcessImageUseCase:
         Wrap raw bytes into OCRInput, delegate to OCRPort, return result.
         """
         ocr_input = OCRInput(image_bytes=image_bytes)
-        return OCRResponse(result=self._ocr_port.predict(ocr_input))
+        result = self._ocr_port.predict(ocr_input)
+        return OCRResponse(result=result)

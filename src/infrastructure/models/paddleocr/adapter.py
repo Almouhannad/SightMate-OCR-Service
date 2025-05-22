@@ -1,11 +1,14 @@
 import onnxruntime as ort
 import numpy as np
+from PIL import Image, ImageDraw
+import io
 from src.domain.ports import OCRPort
 from src.domain.models import OCRInput, OCROutput, TextBlock
 from src.infrastructure.models.registry import register_adapter
 from src.infrastructure.models.paddleocr.config import paddle_ocr_settings
 from src.infrastructure.models.paddleocr.preprocessing import preprocess_for_det, preprocess_recognize
 from src.infrastructure.models.paddleocr.postprocessing import post_process
+from src.infrastructure.models.paddleocr.helpers import order_points
 
 @register_adapter("paddleocr")
 class PaddleOCRAdapter(OCRPort):
@@ -33,6 +36,26 @@ class PaddleOCRAdapter(OCRPort):
                 txt.append(self.chars[i])
             prev = i
         return "".join(txt)
+
+    def _create_annotated_image(self, image_bytes: bytes, boxes: list) -> bytes:
+        """Create an annotated image with text regions drawn."""
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        w, h = image.size
+        image = image.resize(paddle_ocr_settings.target_size, Image.BILINEAR)
+
+        draw = ImageDraw.Draw(image)
+        for box in boxes:
+            # Order points for consistent drawing
+            ordered_box = order_points(box)
+            # Convert to tuples for PIL drawing and add first point at end to close polygon
+            pts = [tuple(pt) for pt in ordered_box] + [tuple(ordered_box[0])]
+            draw.line(pts, fill="black", width=4)
+
+        # Resize back to original dimensions
+        image = image.resize((w, h), Image.BILINEAR)
+        buf = io.BytesIO()
+        image.save(buf, format="PNG")
+        return buf.getvalue()
 
     def predict(self, data: OCRInput) -> OCROutput:
         """Run OCR on the input image."""
@@ -64,13 +87,9 @@ class PaddleOCRAdapter(OCRPort):
             
             # Decode text
             text = self.ctc_decode(pred)
-            
-            # Convert box to region points
-            text_region = [(float(x), float(y)) for x, y in box]
-            
-            blocks.append(TextBlock(
-                text=text,
-                text_region=text_region
-            ))
+            blocks.append(TextBlock(text=text))
 
-        return OCROutput(blocks=blocks)
+        # Create annotated image
+        annotated_image = self._create_annotated_image(data.image_bytes, boxes)
+
+        return OCROutput(blocks=blocks, annotated_image=annotated_image)

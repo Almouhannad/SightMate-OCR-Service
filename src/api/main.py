@@ -5,6 +5,7 @@ from src.domain.ports import OCRPort
 from src.domain.models import OCRInput, OCROutput
 from src.use_cases.process_image import ProcessImageUseCase
 from .schemas import HealthResponse, OCRResponse
+import base64
 
 app = FastAPI(title="OCR Service")
 
@@ -33,9 +34,12 @@ async def health_check() -> HealthResponse:
 async def predict(
     file: UploadFile = File(...),
     use_case: ProcessImageUseCase = Depends(get_process_use_case)
-) -> OCROutput:
+) -> OCRResponse:
     """
     Reads uploaded file bytes, invokes the ProcessImageUseCase, and returns OCR results.
     """
     image_bytes = await file.read()
-    return use_case.execute(image_bytes)
+    response = use_case.execute(image_bytes)
+    # Encode annotated_image as base64 for JSON transport
+    response.result.annotated_image = base64.b64encode(response.result.annotated_image)
+    return response

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Tuple, Optional
+from typing import List, Optional
 
 class OCRInput(BaseModel):
     """
@@ -9,14 +9,13 @@ class OCRInput(BaseModel):
 
 class TextBlock(BaseModel):
     """
-    Single block of recognized text with its region coordinates.
+    Single block of recognized text.
     """
     text: str
-    # Region points in (x,y) format defining the text area
-    text_region: Optional[List[Tuple[float, float]]] = None
 
 class OCROutput(BaseModel):
     """
-    OCR result: list of text blocks.
+    OCR result: list of text blocks and annotated image.
     """
     blocks: List[TextBlock]
+    annotated_image: Optional[bytes] = None
