@@ -1,13 +1,11 @@
 import onnxruntime as ort
+import numpy as np
 from src.domain.ports import OCRPort
 from src.domain.models import OCRInput, OCROutput, TextBlock
-from src.infrastructure.models.paddleocr.postprocessing import post_process
 from src.infrastructure.models.registry import register_adapter
 from src.infrastructure.models.paddleocr.config import paddle_ocr_settings
-from src.infrastructure.models.paddleocr.preprocessing import (
-    preprocess_for_det, preprocess_recognize
-)
-import numpy as np
+from src.infrastructure.models.paddleocr.preprocessing import preprocess_for_det, preprocess_recognize
+from src.infrastructure.models.paddleocr.postprocessing import post_process
 
 @register_adapter("paddleocr")
 class PaddleOCRAdapter(OCRPort):
@@ -67,13 +65,12 @@ class PaddleOCRAdapter(OCRPort):
             # Decode text
             text = self.ctc_decode(pred)
             
-            # Get bounding box coordinates
-            x_min, y_min = map(int, box[0])
-            x_max, y_max = map(int, box[2])
+            # Convert box to region points
+            text_region = [(float(x), float(y)) for x, y in box]
             
             blocks.append(TextBlock(
                 text=text,
-                bbox=(x_min, y_min, x_max, y_max)
+                text_region=text_region
             ))
 
         return OCROutput(blocks=blocks)

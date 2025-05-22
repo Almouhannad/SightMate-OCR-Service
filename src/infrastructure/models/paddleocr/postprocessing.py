@@ -1,13 +1,12 @@
 import numpy as np
 import cv2
 from PIL import Image
-from typing import Tuple, List
 from shapely.geometry import Polygon
 from src.infrastructure.models.paddleocr.config import paddle_ocr_settings
 from src.infrastructure.models.paddleocr.helpers import unclip_polygon, warp_crop
 
-def post_process(det_map: np.ndarray, orig_pil: Image.Image) -> Tuple[List[np.ndarray], List[np.ndarray]]:
-    """Post-process detection map to get boxes and crops."""
+def post_process(det_map: np.ndarray, orig_pil: Image.Image) -> tuple[list[np.ndarray], list[np.ndarray]]:
+    """Post-process detection results to get boxes and crops."""
     h, w = det_map.shape
     bin_map = (cv2.GaussianBlur(det_map, (5,5), 0) > paddle_ocr_settings.box_threshold).astype(np.uint8)*255
     cnts, _ = cv2.findContours(bin_map, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
@@ -24,16 +23,13 @@ def post_process(det_map: np.ndarray, orig_pil: Image.Image) -> Tuple[List[np.nd
         pp = unclip_polygon(pp, paddle_ocr_settings.unclip_ratio)
         if pp.shape[0] < 4:
             continue
-        
-        # Scale back to original
+        # scale back to original
         pp[:,0] *= scale_x
         pp[:,1] *= scale_y
-        
-        # Get minAreaRect and boxPoints
+        # get minAreaRect and boxPoints
         rect = cv2.minAreaRect(pp)
         box4 = cv2.boxPoints(rect).astype(np.float32)
-        
-        # Clip coordinates
+        # clip coords
         box4[:,0] = np.clip(box4[:,0], 0, orig_pil.width-1)
         box4[:,1] = np.clip(box4[:,1], 0, orig_pil.height-1)
         if Polygon(box4).area < paddle_ocr_settings.min_area:
@@ -43,4 +39,4 @@ def post_process(det_map: np.ndarray, orig_pil: Image.Image) -> Tuple[List[np.nd
         boxes.append(box4)
         crops.append(crop)
 
-    return boxes, crops 
+    return boxes, crops

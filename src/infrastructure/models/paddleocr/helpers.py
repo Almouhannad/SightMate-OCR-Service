@@ -40,4 +40,4 @@ def warp_crop(img: np.ndarray, box: np.ndarray, height: int) -> np.ndarray:
     h = height
     dst = np.array([[0, 0], [w, 0], [w, h], [0, h]], dtype="float32")
     M = cv2.getPerspectiveTransform(box, dst)
-    return cv2.warpPerspective(img, M, (w, h), flags=cv2.INTER_LINEAR) 
+    return cv2.warpPerspective(img, M, (w, h), flags=cv2.INTER_LINEAR)
