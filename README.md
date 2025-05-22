@@ -1,0 +1,1 @@
+# SightMate - OCR Service
