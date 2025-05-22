@@ -1,14 +1,14 @@
 import onnxruntime as ort
 from src.domain.ports import OCRPort
 from src.domain.models import OCRInput, OCROutput, TextBlock
+from src.infrastructure.models.registry import register_adapter
 from src.infrastructure.models.paddleocr.config import paddle_ocr_settings
 from src.infrastructure.models.paddleocr.preprocessing import (
     preprocess_for_det, preprocess_recognize, post_process
 )
 import numpy as np
 
-# Note: actual PaddleOCR import happens at runtime
-# to avoid heavy startup if adapter is not used.
+@register_adapter("paddleocr")
 class PaddleOCRAdapter(OCRPort):
     def __init__(self):
         # Load ONNX models
