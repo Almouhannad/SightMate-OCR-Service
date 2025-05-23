@@ -11,13 +11,14 @@ A flexible and extensible Optical Character Recognition (OCR) service built with
 - 🚀 FastAPI-based REST API
 - 🔄 Easy model swapping through Factory and Registry patterns
 - 🎯 High-accuracy text detection and recognition
-- 📝 Support for multiple OCR models (currently PaddleOCR)
+- 📝 Support for multiple OCR models (PaddleOCR, EasyOCR, and others soon...)
 - 🖼️ Returns both text blocks and annotated images
 - 🔧 Configurable through environment files
+- 🎨 Shared annotation logic for consistent visualization
 
 ## 🤖 Supported OCR Models
 
-### Current Model: [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)
+### [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)
 - **Version**: PP-OCRv3
 - **Features**:
   - High accuracy in text detection and recognition
@@ -26,12 +27,15 @@ A flexible and extensible Optical Character Recognition (OCR) service built with
   - Robust against various image conditions
   - Real-time processing capabilities
 
-### Upcoming Models
-- [**EasyOCR**](https://huggingface.co/qualcomm/EasyOCR)
+### [EasyOCR](https://huggingface.co/qualcomm/EasyOCR)
+- **Features**:
   - Support for 80+ languages
   - Built-in language detection
   - No GPU required
   - Easy to use and integrate
+  - High accuracy in various scenarios
+- **Note**:  
+  - Larger model size and slower inference compared to PaddleOCR, but offers more robust multilingual support
 
 The service is designed to easily integrate new OCR models through its modular architecture. Each model is implemented as an adapter that conforms to the `OCRPort` interface, making it simple to add support for additional OCR engines.
 
@@ -61,6 +65,7 @@ src/
    - Uses Factory and Registry patterns for model management
    - Implements ML models adapters
    - Handles external dependencies and technical details
+   - Shared `ImageAnnotator` for consistent visualization across models
 
 3. **API Layer** 🌐
    - FastAPI routes and request/response schemas
@@ -74,6 +79,17 @@ src/
 - **Domain Isolation**: Business rules remain independent of external frameworks
 - **Testability**: Easy to mock external dependencies through ports
 - **Flexibility**: Simple to swap implementations by creating new adapters
+
+### 🎨 Shared Annotation Logic
+
+The service implements a shared annotation system through the `ImageAnnotator` class, which provides:
+- Consistent visualization across different OCR models
+- Standardized bounding box drawing
+- Configurable annotation styles
+- Efficient image processing using OpenCV and supervision
+- Proper handling of image resizing and dimensions
+
+This shared logic ensures that regardless of which OCR model is used, the output annotations maintain a consistent look and feel, making it easier to compare results between different models.
 
 ## 🛠️ Setup and Installation
 
