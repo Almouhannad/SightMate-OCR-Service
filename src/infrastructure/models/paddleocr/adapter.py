@@ -1,6 +1,6 @@
 import onnxruntime as ort
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image
 import io
 from src.domain.ports import OCRPort
 from src.domain.models import OCRInput, OCROutput, TextBlock
@@ -8,7 +8,7 @@ from src.infrastructure.models.registry import register_adapter
 from src.infrastructure.models.paddleocr.config import paddle_ocr_settings
 from src.infrastructure.models.paddleocr.preprocessing import preprocess_for_det, preprocess_recognize
 from src.infrastructure.models.paddleocr.postprocessing import post_process
-from src.infrastructure.models.paddleocr.helpers import order_points
+from src.infrastructure.annotator.image_annotator import ImageAnnotator
 
 @register_adapter("paddleocr")
 class PaddleOCRAdapter(OCRPort):
@@ -25,6 +25,8 @@ class PaddleOCRAdapter(OCRPort):
         # Load character dictionary
         with open(paddle_ocr_settings.char_dict_path, encoding="utf8") as f:
             self.chars = [line.rstrip("\n") for line in f]
+        # Initialize image annotator
+        self.image_annotator = ImageAnnotator()
 
     def ctc_decode(self, pred: np.ndarray) -> str:
         """Decode CTC output to text."""
@@ -37,28 +39,12 @@ class PaddleOCRAdapter(OCRPort):
             prev = i
         return "".join(txt)
 
-    def _create_annotated_image(self, image_bytes: bytes, boxes: list) -> bytes:
-        """Create an annotated image with text regions drawn."""
-        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-        w, h = image.size
-        image = image.resize(paddle_ocr_settings.target_size, Image.BILINEAR)
-
-        draw = ImageDraw.Draw(image)
-        for box in boxes:
-            # Order points for consistent drawing
-            ordered_box = order_points(box)
-            # Convert to tuples for PIL drawing and add first point at end to close polygon
-            pts = [tuple(pt) for pt in ordered_box] + [tuple(ordered_box[0])]
-            draw.line(pts, fill="black", width=4)
-
-        # Resize back to original dimensions
-        image = image.resize((w, h), Image.BILINEAR)
-        buf = io.BytesIO()
-        image.save(buf, format="PNG")
-        return buf.getvalue()
-
     def predict(self, data: OCRInput) -> OCROutput:
         """Run OCR on the input image."""
+        # Get original image dimensions
+        original_image = Image.open(io.BytesIO(data.image_bytes))
+        original_size = original_image.size
+        
         # Preprocess for detection
         det_tensor, resized_pil = preprocess_for_det(data.image_bytes)
         
@@ -89,7 +75,18 @@ class PaddleOCRAdapter(OCRPort):
             text = self.ctc_decode(pred)
             blocks.append(TextBlock(text=text))
 
-        # Create annotated image
-        annotated_image = self._create_annotated_image(data.image_bytes, boxes)
+        # Create annotated image using ImageAnnotator with resized image
+        buf = io.BytesIO()
+        resized_pil.save(buf, format="PNG")
+        annotated_image = self.image_annotator.annotate(buf.getvalue(), boxes)
+        buf.close()
+        
+        # Resize annotated image back to original dimensions
+        annotated_pil = Image.open(io.BytesIO(annotated_image))
+        annotated_pil = annotated_pil.resize(original_size, Image.BILINEAR)
+        buf = io.BytesIO()
+        annotated_pil.save(buf, format="PNG")
+        annotated_image = buf.getvalue()
+        buf.close()
 
         return OCROutput(blocks=blocks, annotated_image=annotated_image)
