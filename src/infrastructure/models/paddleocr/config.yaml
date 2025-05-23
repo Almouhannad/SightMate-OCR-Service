@@ -1,7 +1,7 @@
 # ONNX model paths
-det_model_path: "models/ml_PP-OCRv3_det.onnx"
-rec_model_path: "models/en_PP-OCRv3_rec.onnx"
-char_dict_path: "models/en_dict.txt"
+det_model_path: "models/PaddleOCR/ml_PP-OCRv3_det.onnx"
+rec_model_path: "models/PaddleOCR/en_PP-OCRv3_rec.onnx"
+char_dict_path: "models/PaddleOCR/en_dict.txt"
 
 # ONNX runtime configuration
 providers: ["CPUExecutionProvider"]
