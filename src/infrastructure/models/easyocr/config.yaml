@@ -1,0 +1,53 @@
+# Model configuration
+lang_list: ['en', 'ar']
+gpu: true
+model_storage_directory: 'models/EasyOCR'
+user_network_directory: null
+detect_network: 'craft'
+recog_network: 'standard'
+download_enabled: true
+detector: true
+recognizer: true
+verbose: false
+quantize: true
+cudnn_benchmark: false
+
+# OCR parameters
+decoder: 'greedy'
+beamWidth: 5
+batch_size: 1
+workers: 0
+allowlist: null
+blocklist: null
+detail: 1
+paragraph: false
+min_size: 20
+rotation_info: null
+
+# Contrast parameters
+contrast_ths: 0.1
+adjust_contrast: 0.5
+filter_ths: 0.003
+
+# Text detection parameters
+text_threshold: 0.7
+low_text: 0.4
+link_threshold: 0.4
+canvas_size: 2560
+mag_ratio: 1
+
+# Bounding box parameters
+slope_ths: 0.1
+ycenter_ths: 0.5
+height_ths: 0.5
+width_ths: 0.5
+add_margin: 0.1
+x_ths: 1.0
+y_ths: 0.5
+
+# Additional filtering
+threshold: 0.2
+bbox_min_score: 0.2
+bbox_min_size: 3
+max_candidates: 0
+output_format: 'standard' 
