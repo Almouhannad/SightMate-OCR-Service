@@ -1,25 +1,27 @@
-from fastapi import FastAPI, File, UploadFile, Depends
+import time
+import base64
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, File, UploadFile, Depends, Request
 from src.core.config import settings
 from src.infrastructure.models.registry import get_adapter
-from src.domain.ports import OCRPort
-from src.domain.models import OCRInput, OCROutput
 from src.use_cases.process_image import ProcessImageUseCase
 from .schemas import HealthResponse, OCRResponse
-import base64
 
-app = FastAPI(title="OCR Service")
-
-def get_ocr_port() -> OCRPort:
-    """Dependency that provides the configured OCR adapter instance."""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: instantiate adapter & use case once
     AdapterCls = get_adapter(settings.ocr_adapter)
-    return AdapterCls()
+    app.state.ocr_port = AdapterCls()
+    app.state.process_use_case = ProcessImageUseCase(app.state.ocr_port)
+    yield
 
-app.dependency_overrides[OCRPort] = get_ocr_port
+app = FastAPI(
+    title="OCR Service",
+    lifespan=lifespan,
+)
 
-def get_process_use_case(
-    ocr_port: OCRPort = Depends(get_ocr_port)
-) -> ProcessImageUseCase:
-    return ProcessImageUseCase(ocr_port)
+def get_process_use_case(request: Request) -> ProcessImageUseCase:
+    return request.app.state.process_use_case
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
@@ -33,13 +35,14 @@ async def health_check() -> HealthResponse:
 )
 async def predict(
     file: UploadFile = File(...),
-    use_case: ProcessImageUseCase = Depends(get_process_use_case)
+    use_case: ProcessImageUseCase = Depends(get_process_use_case),
 ) -> OCRResponse:
-    """
-    Reads uploaded file bytes, invokes the ProcessImageUseCase, and returns OCR results.
-    """
     image_bytes = await file.read()
+    st = time.perf_counter()
     response = use_case.execute(image_bytes)
-    # Encode annotated_image as base64 for JSON transport
-    response.result.annotated_image = base64.b64encode(response.result.annotated_image)
+    elapsed_ms = (time.perf_counter() - st) * 1000
+    print(f"Inference time = {elapsed_ms:.2f} ms")
+    response.result.annotated_image = base64.b64encode(
+        response.result.annotated_image
+    )
     return response
