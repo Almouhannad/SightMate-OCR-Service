@@ -4,7 +4,7 @@ rec_model_path: "models/PaddleOCR/en_PP-OCRv3_rec.onnx"
 char_dict_path: "models/PaddleOCR/en_dict.txt"
 
 # ONNX runtime configuration
-providers: ["CPUExecutionProvider"]
+providers: ["TensorrtExecutionProvider"]
 
 # Detection parameters
 box_threshold: 0.3
