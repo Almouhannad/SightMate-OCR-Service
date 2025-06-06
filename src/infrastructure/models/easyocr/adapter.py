@@ -1,14 +1,15 @@
+from typing import List
 import easyocr
 import numpy as np
 import cv2
-from src.domain.ports import OCRPort
-from src.domain.models import OCRInput, OCROutput, TextBlock
-from src.infrastructure.annotator.image_annotator import ImageAnnotator
+
+from src.domain.models import OcrInput, OcrOutput, OcrResult, Rect
+from src.domain.ports import OcrPort
 from src.infrastructure.models.registry import register_adapter
 from src.infrastructure.models.easyocr.config import easy_ocr_settings
 
 @register_adapter("easyocr")
-class EasyOCRAdapter(OCRPort):
+class EasyOCRAdapter(OcrPort):
     def __init__(self):
         # Initialize EasyOCR reader with settings from config
         self.reader = easyocr.Reader(
@@ -25,13 +26,11 @@ class EasyOCRAdapter(OCRPort):
             quantize=easy_ocr_settings.quantize,
             cudnn_benchmark=easy_ocr_settings.cudnn_benchmark
         )
-        # Initialize image annotator
-        self.annotator = ImageAnnotator()
 
-    def predict(self, data: OCRInput) -> OCROutput:
+    def predict(self, data: OcrInput) -> OcrOutput:
         """Run OCR on the input image."""
         # Convert bytes to numpy array
-        nparr = np.frombuffer(data.image_bytes, np.uint8)
+        nparr = np.array(data.bytes, np.uint8)
         image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
         # Run OCR with settings from config
@@ -70,14 +69,25 @@ class EasyOCRAdapter(OCRPort):
         )
 
         # Process results
-        blocks = []
-        boxes = []
+        ocr_results = []
         for detection in result:
             bbox, text, confidence = detection[0], detection[1], detection[2]
-            blocks.append(TextBlock(text=text))
-            boxes.append(bbox)
+            ocr_results.append(OcrResult(text=text, confidence=confidence, box=self.coords_to_rect(bbox)))
 
-        # Create annotated image using the annotator
-        annotated_image = self.annotator.annotate(data.image_bytes, boxes)
+        return OcrOutput(texts=ocr_results) 
+    
+    def coords_to_rect(self, coords: List[List]) -> Rect:
+        # Convert each numpy int into a Python float
+        xs = [float(point[0]) for point in coords]
+        ys = [float(point[1]) for point in coords]
 
-        return OCROutput(blocks=blocks, annotated_image=annotated_image) 
+        return Rect(
+            left=min(xs),
+            top=min(ys),
+            right=max(xs),
+            bottom=max(ys),
+        )
+    
+
+
+
