@@ -27,7 +27,7 @@ def get_process_use_case(request: Request) -> ProcessImageUseCase:
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
-    return HealthResponse(status=CONFIG.lms_api)
+    return HealthResponse()
 
 @app.post(
     "/ocr/predict",
