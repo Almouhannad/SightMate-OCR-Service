@@ -1,0 +1,22 @@
+# API Configuration
+  # This should be overridden by CONFIG.lms_api from .env with api key
+lms_api_base_url: "http://some_free_Gemma_api:1234/v1"
+chat_endpoint: "/chat/completions"
+
+# Model Configuration
+model_name: "google/gemma-3-4b"
+prompt_path: "models/Gemma/prompt.txt"
+
+# Request Configuration
+headers:
+  Content-Type: "application/json"
+
+# Generation Parameters
+temperature: 0.4
+top_k: 40
+top_p: 0.95
+min_p: 0.05
+repeat_penalty: 1.1
+
+# Response Processing
+strip_json_markers: true # Whether to strip ```json and ``` from response
