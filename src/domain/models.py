@@ -36,4 +36,4 @@ class OcrResult(BaseModel):
 
 class OcrOutput(BaseModel):
     texts: list[OcrResult]
-    description: Optional[Dict[str, object]]
+    description: Optional[Dict[str, object]] = []
