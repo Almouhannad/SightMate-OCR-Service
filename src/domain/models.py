@@ -1,21 +1,39 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict
 
-class OCRInput(BaseModel):
-    """
-    Input for OCR: raw image bytes.
-    """
-    image_bytes: bytes
 
-class TextBlock(BaseModel):
-    """
-    Single block of recognized text.
-    """
+class Rect(BaseModel):
+    left: float
+    top: float
+    right: float
+    bottom: float
+
+
+class OcrLang(BaseModel):
+    lang: str
+
+
+class OcrLangs:
+    EN: OcrLang = OcrLang(lang="en")
+    AR: OcrLang = OcrLang(lang="ar")
+    LANGS: List[str] = ["en", "ar"]
+
+
+class OcrOptions(BaseModel):
+    lang: OcrLang = OcrLangs.EN
+
+
+class OcrInput(BaseModel):
+    bytes: List[int]
+    metadata: Optional[Dict[str, object]] = None
+    options: OcrOptions = OcrOptions()
+
+
+class OcrResult(BaseModel):
     text: str
+    confidence: Optional[float] = None
+    box: Rect
 
-class OCROutput(BaseModel):
-    """
-    OCR result: list of text blocks and annotated image.
-    """
-    blocks: List[TextBlock]
-    annotated_image: Optional[bytes] = None
+class OcrOutput(BaseModel):
+    texts: list[OcrResult]
+    description: Optional[Dict[str, object]]
