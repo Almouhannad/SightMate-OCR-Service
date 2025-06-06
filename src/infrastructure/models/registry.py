@@ -1,7 +1,9 @@
 from typing import Type
-from src.domain.ports import OCRPort
 
-_ADAPTERS: dict[str, Type[OCRPort]] = {}
+from src.domain.ports import OcrPort
+
+
+_ADAPTERS: dict[str, Type[OcrPort]] = {}
 
 def register_adapter(name: str):
     """
@@ -13,12 +15,12 @@ def register_adapter(name: str):
     Returns:
         Decorator function that registers the adapter class
     """
-    def decorator(cls: Type[OCRPort]):
+    def decorator(cls: Type[OcrPort]):
         _ADAPTERS[name] = cls
         return cls
     return decorator
 
-def get_adapter(name: str) -> Type[OCRPort]:
+def get_adapter(name: str) -> Type[OcrPort]:
     """
     Get an OCR adapter class by name.
     
