@@ -37,6 +37,20 @@ A flexible and extensible Optical Character Recognition (OCR) service built with
 - **Note**:
   - Larger model size and slower inference compared to PaddleOCR, but offers more robust multilingual support
 
+### [Gemma](https://ai.google.dev/gemma)
+
+- **Version**: Gemma 3-4B
+- **Features**:
+  - Vision-language model capabilities
+  - Advanced text understanding and description
+  - Contextual understanding of text in images
+  - Structured JSON output format
+  - Configurable generation parameters
+- **Note**:
+  - Requires API access to Gemma model endpoint
+  - Provides richer semantic understanding compared to traditional OCR models
+  - Outputs include both detected text and contextual descriptions
+
 The service is designed to easily integrate new OCR models through its modular architecture. Each model is implemented as an adapter that conforms to the `OCRPort` interface, making it simple to add support for additional OCR engines.
 
 ## 🏗️ Architecture
@@ -108,7 +122,11 @@ pip install -r requirements.txt
 5. Create a `.env` file with your configuration:
 
 ```env
+# Choose one of: paddleocr, easyocr, gemma
 OCR_ADAPTER=paddleocr
+
+# Required for Gemma adapter
+LMS_API=your_gemma_api_endpoint  # Only needed if using gemma adapter
 ```
 
 ## 🚀 Running the Service
