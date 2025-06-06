@@ -1,6 +1,6 @@
 fastapi==0.115.12
 numpy==2.2.6
-onnxruntime==1.19.2
+onnxruntime_gpu==1.22.0
 opencv_contrib_python==4.11.0.86
 opencv_python==4.11.0.86
 opencv_python_headless==4.11.0.86
@@ -11,4 +11,3 @@ pydantic_settings==2.9.1
 PyYAML==6.0.2
 PyYAML==6.0.2
 Shapely==2.1.1
-supervision==0.25.1
