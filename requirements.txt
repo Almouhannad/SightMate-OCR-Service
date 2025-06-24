@@ -26,6 +26,7 @@ lazy_loader==0.4
 markdown-it-py==3.0.0
 MarkupSafe==3.0.2
 mdurl==0.1.2
+motor==3.7.1
 mpmath==1.3.0
 networkx==3.4.2
 ninja==1.11.1.4
@@ -56,6 +57,7 @@ pydantic-extra-types==2.10.5
 pydantic-settings==2.10.0
 pydantic_core==2.33.2
 Pygments==2.19.2
+pymongo==4.13.2
 python-bidi==0.6.6
 python-dotenv==1.1.1
 python-multipart==0.0.20
