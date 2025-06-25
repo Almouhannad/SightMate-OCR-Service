@@ -1,18 +1,62 @@
 import os
-from pathlib import Path
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from enum import Enum
+from typing import Dict
+from dotenv import dotenv_values
 
-class AppConfig(BaseSettings):
-    """Application settings."""
+# Load .env but allow override by real environment
+_local_vars: Dict[str, str | None] = dotenv_values()
 
-    # Use environment variable if available, else fallback to hardcoded defaults
-    ocr_adapter: str = os.getenv("OCR_ADAPTER", "easyocr")
-    lms_api: str = os.getenv("LMS_API", "")
 
-    model_config = SettingsConfigDict(
-        # Use env file (for host), otherwise env variables will be used (for container)
-        env_file=".env" if Path(".env").exists() else None,
-        env_file_encoding="utf-8"
-    )
+class ConfigField(Enum):
+    RUNNING_ON                     = "RUNNING_ON"
+    OCR_ADAPTER                    = "OCR_ADAPTER"
+    LMS_API_BASE_URI_FOR_HOST      = "LMS_API_BASE_URI_FOR_HOST"
+    LMS_API_BASE_URI_FOR_CONTAINER = "LMS_API_BASE_URI_FOR_CONTAINER"
+    MONGODB_URI                    = "MONGODB_URI"
+    MONGO_DATABASE                 = "MONGO_DATABASE"
 
+
+class AppConfig:
+    """Application settings, loaded from .env or environment."""
+
+    @staticmethod
+    def _get(field: ConfigField, default: str) -> str:
+        """
+        Retrieve a setting by:
+          1. checking .env values (FOR HOST),
+          2. then os.environ (with `default`) (FOR CONTAINER),
+        """
+        # 1) Try the parsed .env file
+        val = _local_vars.get(field.value)
+        if val is not None:
+            return val
+
+        # 2) Fallback to real environment, supplying a str default
+        return os.getenv(field.value, default)
+
+    @property
+    def running_on(self) -> str:
+        return self._get(ConfigField.RUNNING_ON, "container")
+
+    @property
+    def ocr_adapter(self) -> str:
+        return self._get(ConfigField.OCR_ADAPTER, "easyocr")
+
+    @property
+    def lms_api(self) -> str:
+        # choose host or container URI based on running_on
+        if self.running_on == "host":
+            return self._get(ConfigField.LMS_API_BASE_URI_FOR_HOST, "")
+        return self._get(ConfigField.LMS_API_BASE_URI_FOR_CONTAINER, "")
+
+    @property
+    def mongodb_uri(self) -> str:
+        return self._get(ConfigField.MONGODB_URI, "")
+
+    @property
+    def mongodb_database(self) -> str:
+        return self._get(ConfigField.MONGO_DATABASE, "")
+
+
+# Single, module‐level instance
 CONFIG = AppConfig()
