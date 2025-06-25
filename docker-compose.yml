@@ -3,6 +3,9 @@ version: '3.8'
 services:
   api:
     build: .
+    volumes:
+      - ./src:/app/src
+      - ./models:/app/models
     ports:
       - "9901:8000"
     env_file:
@@ -30,7 +33,7 @@ services:
     depends_on:
       - mongo
     ports:
-      - "8081:8081"
+      - "9801:8081"
     environment:
       ME_CONFIG_MONGODB_SERVER:          mongo
       ME_CONFIG_MONGODB_PORT:            27017
