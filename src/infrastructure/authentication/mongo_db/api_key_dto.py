@@ -12,7 +12,7 @@ class PyObjectId(ObjectId):
         yield cls.validate
 
     @classmethod
-    def validate(cls, v):
+    def validate(cls, v, _):
         if not ObjectId.is_valid(v):
             raise ValueError("Invalid ObjectId")
         return ObjectId(v)
@@ -29,7 +29,7 @@ class ApiKeyDTO(BaseModel):
     number_of_requests: int = 0
 
     class Config:
-        allow_population_by_field_name = True
+        validate_by_name = True
         json_encoders = {ObjectId: str}
 
     def to_domain(self) -> ApiKey:
@@ -49,4 +49,6 @@ class ApiKeyDTO(BaseModel):
         # if no id, let default_factory generate one:
         if data.get("id") is not None:
             data["_id"] = ObjectId(data["id"])
+        if "id" in data:
+            del data["id"]            
         return cls(**data)
