@@ -7,11 +7,13 @@ import pymongo
 from src.core.config import CONFIG
 from src.domain.authentication.api_key import ApiKey
 from src.domain.authentication.api_key_repository import ApiKeyRepository
+from src.infrastructure.authentication.api_key_repositories.registry import register_api_key_repository
 from src.infrastructure.authentication.mongo_db.api_key_dto import ApiKeyDTO
 from src.infrastructure.authentication.utils.hash_provider import HashProvider
 
 API_KEYS_COLLECTION = "api_keys"
 KEY_PREFIX_SIZE = 10
+@register_api_key_repository("mongo_db")
 class MongoDbApiKeyRepository(ApiKeyRepository):
     def __init__(self):
         # Initialize Motor client & select database/collection
