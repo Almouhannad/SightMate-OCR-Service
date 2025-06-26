@@ -14,6 +14,7 @@ class ConfigField(Enum):
     LMS_API_BASE_URI_FOR_CONTAINER = "LMS_API_BASE_URI_FOR_CONTAINER"
     MONGODB_URI                    = "MONGODB_URI"
     MONGO_DATABASE                 = "MONGO_DATABASE"
+    API_KEY_REPOSITORY             = "API_KEY_REPOSITORY"
 
 
 class AppConfig:
@@ -56,6 +57,10 @@ class AppConfig:
     @property
     def mongodb_database(self) -> str:
         return self._get(ConfigField.MONGO_DATABASE, "")
+    
+    @property
+    def api_key_repository(self) -> str:
+        return self._get(ConfigField.API_KEY_REPOSITORY, "")    
 
 
 # Single, module‐level instance
