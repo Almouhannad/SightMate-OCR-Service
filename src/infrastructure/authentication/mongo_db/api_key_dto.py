@@ -24,6 +24,7 @@ class ApiKeyDTO(BaseModel):
     """
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     hashed_key: str
+    key_prefix: str
     initialized_in: datetime
     last_use_in: Optional[datetime] = None
     number_of_requests: int = 0
@@ -37,6 +38,7 @@ class ApiKeyDTO(BaseModel):
         return ApiKey(
             id=str(self.id),
             hashed_key=self.hashed_key,
+            key_prefix=self.key_prefix,
             initialized_in=self.initialized_in,
             last_use_in=self.last_use_in,
             number_of_requests=self.number_of_requests,

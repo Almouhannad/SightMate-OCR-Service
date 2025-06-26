@@ -1,8 +1,8 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
-
-from bson import ObjectId
+import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
+import pymongo
 
 from src.core.config import CONFIG
 from src.domain.authentication.api_key import ApiKey
@@ -11,6 +11,7 @@ from src.infrastructure.authentication.mongo_db.api_key_dto import ApiKeyDTO
 from src.infrastructure.authentication.utils.hash_provider import HashProvider
 
 API_KEYS_COLLECTION = "api_keys"
+KEY_PREFIX_SIZE = 10
 class MongoDbApiKeyRepository(ApiKeyRepository):
     def __init__(self):
         # Initialize Motor client & select database/collection
@@ -23,13 +24,16 @@ class MongoDbApiKeyRepository(ApiKeyRepository):
         """
         Retrieve an ApiKey by its plain-text key. Return None if not found.
         """
-        cursor = self._collection.find({})
+        key_prefix = key[:KEY_PREFIX_SIZE]
+        cursor = self._collection.find({"key_prefix": key_prefix}) # This will be indexed search
         matching = None
         async for doc in cursor:
             if self._hash_provider.verify_api_key(key, doc["hashed_key"]):
                 matching = doc
                 break
-        return ApiKeyDTO(**matching).to_domain()
+        if matching is not None:
+            return ApiKeyDTO(**matching).to_domain()
+        return None
 
     async def create(
         self,
@@ -39,7 +43,13 @@ class MongoDbApiKeyRepository(ApiKeyRepository):
         Store a fresh ApiKey record in persistence.
         Should return the stored entity (with id populated).
         """
-        dto = ApiKeyDTO.from_domain(ApiKey(hashed_key=self._hash_provider.hash_api_key(key)))
+        key_prefix = key[:KEY_PREFIX_SIZE]
+        dto = ApiKeyDTO.from_domain(
+            ApiKey(
+                hashed_key=self._hash_provider.hash_api_key(key),
+                key_prefix=key_prefix
+            )
+        )
         result = await self._collection.insert_one(dto.model_dump(by_alias=True))
         # Inject generated ObjectId back into DTO → domain
         dto.id = str(result.inserted_id)

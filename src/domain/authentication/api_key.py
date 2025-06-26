@@ -8,6 +8,7 @@ class ApiKey(BaseModel):
     """
     id: Optional[str] = None
     hashed_key: str
+    key_prefix: str # For effecient search
     initialized_in: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_use_in: Optional[datetime] = None
     number_of_requests: int = 0
