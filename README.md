@@ -13,6 +13,7 @@ A flexible and extensible Optical Character Recognition (OCR) service built with
 - 🎯 High-accuracy text detection and recognition
 - 📝 Support for multiple OCR models (PaddleOCR, EasyOCR, and others soon...)
 - 🔧 Configurable through environment files
+- 🐳 Easy deployment with Docker Compose
 
 ## 🤖 Supported OCR Models
 
@@ -85,7 +86,7 @@ src/
 3. **API Layer** 🌐
    - FastAPI routes and request/response schemas
    - Acts as a primary adapter for HTTP communication
-   - Dependency injection for OCR model selection
+   - Dependency injection for OCR model/api-key-repo selection
 
 ### 🎯 Hexagonal Architecture Benefits
 
@@ -97,56 +98,68 @@ src/
 
 ## 🛠️ Setup and Installation
 
-1. Clone the repository:
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/Almouhannad/SightMate-OCR-Service.git
 cd SightMate-OCR-Service
 ```
 
-2. Create a virtual environment and activate it:
+### 2. Configure Environment Variables
 
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-3. Install dependencies:
-
-```bash
-pip install -r requirements.txt
-RUN pip install --no-cache-dir passlib
-```
-
-4. Download the required model files and place them in the `models/` directory
-
-5. Create a `.env` file with your configuration:
+Create a `.env` file in the project root with the following content:
 
 ```env
-# Choose one of: paddleocr, easyocr, gemma
+# OCR model to use: paddleocr, easyocr, or gemma
 OCR_ADAPTER=paddleocr
+# API Key repository to use (e.g. mongo_db, in-memory, ...)
+API_KEY_REPOSITORY=mongo_db
+
+# MongoDB configuration
+MONGO_HOST=mongo
+MONGO_PORT=27017
+MONGO_ROOT_USERNAME=your_mongo_root_username
+MONGO_ROOT_PASSWORD=your_mongo_root_password
+MONGO_DATABASE=your_database_name
+# Application database and user
+MONGO_DATABASE=ocr_service_database
+MONGO_APP_USERNAME=ocr_service
+MONGO_APP_PASSWORD=admin
+MONGODB_URI=mongodb://${MONGO_APP_USERNAME}:${MONGO_APP_PASSWORD}@${MONGO_HOST}:${MONGO_PORT}/${MONGO_DATABASE}
 
 # Required for Gemma adapter
-LMS_API=your_gemma_api_endpoint  # Only needed if using gemma adapter
+LMS_API_BASE_URI_FOR_CONTAINER=your_gemma_api_base_uri  # Only needed if using gemma adapter
+
+# Mongo Express credentials
+ME_USERNAME=admin
+ME_PASSWORD=admin
 ```
 
-## 🚀 Running the Service
+### 3. Run with Docker Compose
 
-Start the FastAPI server:
+Make sure Docker and Docker Compose are installed, then run:
 
 ```bash
-uvicorn src.api.main:app --reload
+docker-compose up --build
 ```
+
+- The API will be available at [http://localhost:9901](http://localhost:9901)
+- Mongo Express UI at [http://localhost:9801](http://localhost:9801)
 
 ## 📡 API Endpoints
 
-### POST /ocr/predict
+### 🔒 Authentication
 
-Process an image and return OCR results.
+All endpoints (except `/health`) require an API key via the `X-API-Key` header. See the API key management section below for details on how API keys are stored and validated.
+
+### POST `/ocr/predict`
+
+Process an image and return OCR results. **Requires authentication** via the `X-API-Key` header.
 
 **Request:**
 
 - Content-Type: application/json
+- Header: `X-API-Key: <your-api-key>`
 - Body:
 
 ```json
@@ -154,7 +167,7 @@ Process an image and return OCR results.
   "bytes": [...],  // List of image bytes
   "metadata": {},  // Optional metadata
   "options": {
-    "lang": { // Optional options for OCR processing
+    "lang": {
       "lang": "en"  // Language code (e.g., "en", "ar")
     }
   }
@@ -163,12 +176,14 @@ Process an image and return OCR results.
 
 **Response:**
 
+The response follows the `OcrOutput` schema (see [`src/domain/models.py`](src/domain/models.py)):
+
 ```json
 {
   "texts": [
     {
       "text": "detected text",
-      "confidence": 0.95, // Optional confidence score
+      "confidence": 0.95,
       "box": {
         "left": 100,
         "top": 50,
@@ -177,9 +192,25 @@ Process an image and return OCR results.
       }
     }
   ],
-  "description": {} // Optional additional information
+  "description": {}
 }
 ```
+
+- `texts`: List of detected text blocks, each with text, optional confidence, and bounding box.
+- `description`: Optional additional information (may be empty or contain model-specific output).
+
+### GET `/health`
+
+A simple health check endpoint. Returns a 200 OK response if the service is running.
+
+**Response:**
+
+```json
+{
+  "status": "ok"
+}
+```
+
 
 ## 🔌 Adding New OCR Models
 
@@ -201,6 +232,28 @@ class NewOCRAdapter(OCRPort):
         # Implement OCR logic
         pass
 ```
+
+## 🔑 API Key Management & Repository Pattern
+
+The service uses a flexible, pluggable repository pattern for API key management, following the same clean architecture principles as the rest of the project. This allows you to easily swap out the backend for API key storage (e.g., MongoDB, in-memory, etc.).
+
+**Key files and their roles:**
+
+- [`src/domain/authentication/api_key_repository.py`](src/domain/authentication/api_key_repository.py): Abstract base class (`ApiKeyRepository`) defining the interface for API key storage and retrieval.
+- [`src/domain/authentication/api_key.py`](src/domain/authentication/api_key.py): The core domain model for API keys, including logic for usage tracking.
+- [`src/infrastructure/authentication/api_key_repositories/registry.py`](src/infrastructure/authentication/api_key_repositories/registry.py): Registry and decorator for registering and retrieving repository implementations by name.
+- [`src/infrastructure/authentication/mongo_db/api_key_dto.py`](src/infrastructure/authentication/mongo_db/api_key_dto.py): Data Transfer Object (DTO) for MongoDB persistence, handling conversion between domain and database models.
+- [`src/infrastructure/authentication/api_key_repositories/mongo_db/repository.py`](src/infrastructure/authentication/api_key_repositories/mongo_db/repository.py): Concrete implementation of `ApiKeyRepository` for MongoDB, using Motor for async access.
+
+
+**How it works:**
+
+- The repository interface (`ApiKeyRepository`) defines async methods for getting, creating, and updating API keys.
+  - Api keys must be stored in DB/other backend using their hash values **(not plain-text)**, with usage of `key_prefix` for fast, indexed search
+- The MongoDB implementation (`MongoDbApiKeyRepository`) is registered using a decorator and selected via configuration.
+- The API key is validated for each request to `/ocr/predict` using a FastAPI dependency (see [`src/api/dependencies/authentication.py`](src/api/dependencies/authentication.py)).
+- You can add new repository backends by implementing the interface, they'll be automatically registered, make sure to specify your backend name in `.env` (`API_KEY_REPOSITORY` field).
+
 
 ## 📸 More Screenshots
 
