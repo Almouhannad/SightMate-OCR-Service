@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 import time
 from fastapi import Depends, FastAPI, Request
 
+from src.api.dependencies.authentication import authenticate_api_key
 from src.api.schemas import HealthResponse
 from src.core.config import CONFIG
 from src.domain.models import OcrInput, OcrOutput
@@ -38,6 +39,7 @@ async def health_check() -> HealthResponse:
 async def predict(
     ocr_input: OcrInput,
     use_case: ProcessImageUseCase = Depends(get_process_use_case),
+    _ = Depends(authenticate_api_key),
 ) -> OcrOutput:
     st = time.perf_counter()
     response = use_case.execute(ocr_input)
