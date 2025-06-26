@@ -115,6 +115,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 ```bash
 pip install -r requirements.txt
+RUN pip install --no-cache-dir passlib
 ```
 
 4. Download the required model files and place them in the `models/` directory
