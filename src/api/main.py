@@ -33,7 +33,7 @@ async def health_check() -> HealthResponse:
     return HealthResponse()
 
 @app.get("/create_key", response_model=ApiKey)
-async def health_check() -> ApiKey:
+async def create_api_key() -> ApiKey:
     api_key_repo = get_api_key_repository(CONFIG.api_key_repository)()
     return await api_key_repo.create()
 
