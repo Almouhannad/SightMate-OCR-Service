@@ -16,7 +16,7 @@ class ApiKeyRepository(ABC):
     @abstractmethod
     async def create(
         self,
-        key: str
+        key: Optional[str] = None
     ) -> ApiKey:
         """
         Store a fresh ApiKey record in persistence.

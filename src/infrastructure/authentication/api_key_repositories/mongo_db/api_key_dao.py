@@ -17,7 +17,7 @@ class PyObjectId(ObjectId):
             raise ValueError("Invalid ObjectId")
         return ObjectId(v)
 
-class ApiKeyDTO(BaseModel):
+class ApiKeyDAO(BaseModel):
     """
     Persistence model for Mongo. Knows about ObjectId, _id aliasing,
     JSON encoding, and ID validation.
@@ -34,7 +34,7 @@ class ApiKeyDTO(BaseModel):
         json_encoders = {ObjectId: str}
 
     def to_domain(self) -> ApiKey:
-        """Convert DTO → pure domain model (ID becomes string)."""
+        """Convert DAO → pure domain model (ID becomes string)."""
         return ApiKey(
             id=str(self.id),
             hashed_key=self.hashed_key,
@@ -45,8 +45,8 @@ class ApiKeyDTO(BaseModel):
         )
 
     @classmethod
-    def from_domain(cls, entity: ApiKey) -> "ApiKeyDTO":
-        """Convert domain model → DTO (string ID → ObjectId)."""
+    def from_domain(cls, entity: ApiKey) -> "ApiKeyDAO":
+        """Convert domain model → DAO (string ID → ObjectId)."""
         data = entity.model_dump()
         # if no id, let default_factory generate one:
         if data.get("id") is not None:

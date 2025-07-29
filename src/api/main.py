@@ -5,8 +5,10 @@ from fastapi import Depends, FastAPI, Request
 from src.api.dependencies.authentication import authenticate_api_key
 from src.api.schemas import HealthResponse
 from src.core.config import CONFIG
+from src.domain.authentication.api_key import ApiKey
 from src.domain.models import OcrInput, OcrOutput
 from src.domain.use_cases.process_image import ProcessImageUseCase
+from src.infrastructure.authentication.api_key_repositories.registry import get_api_key_repository
 from src.infrastructure.models.registry import get_adapter
 
 
@@ -29,6 +31,12 @@ def get_process_use_case(request: Request) -> ProcessImageUseCase:
 @app.get("/health", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
     return HealthResponse()
+
+@app.get("/create_key", response_model=ApiKey)
+async def health_check() -> ApiKey:
+    api_key_repo = get_api_key_repository(CONFIG.api_key_repository)()
+    return await api_key_repo.create()
+
 
 @app.post(
     "/ocr/predict",
